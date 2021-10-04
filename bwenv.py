@@ -23,11 +23,22 @@ class BW:
     def sync(self):
         self.exec("sync")
         logger.log(logging.INFO, "Synced")
+    
+    def get_folder(self, name: str):
+        res = self.exec("list", "folders", "--search", name)
+        res.check_returncode()
+        items = json.loads(res.stdout)
+        if len(items) != 1:
+            raise Exception(f"invalid search should be unique {len(items)}")
+        return items[0]
 
     def get_item(self, name: str):
-        res = self.exec("get", "item", name)
+        res = self.exec("list", "items", "--folderid", self._folder_id, "--search", name)
         res.check_returncode()
-        return json.loads(res.stdout)
+        items = json.loads(res.stdout)
+        if len(items) != 1:
+            raise Exception(f"invalid search should be unique {len(items)}")
+        return items[0]
     
     def get_values(self, name: str):
         item = self.get_item(name)
@@ -106,6 +117,7 @@ def get_bw(bw: BW, itemname, filename):
 
 import argparse
 parser = argparse.ArgumentParser(description='Bitwarden Environment')
+parser.add_argument("--config", default="bwenv.json", help='config file')
 subp = parser.add_subparsers(dest="action")
 
 get_parser = subp.add_parser("get")
@@ -120,36 +132,56 @@ set_parser.add_argument('-s', action='store_true', help="sync")
 
 sync_parser = subp.add_parser("sync")
 
+init_parser = subp.add_parser("init")
+init_parser.add_argument('NAME', help='name of folder')
+
+def get_config(config_file):
+    try:
+        with open(config_file, "rt") as fp:
+            return json.load(fp)
+    except:
+        logger.fatal(f"Missing config_file {config_file}")
+        exit(1)
+
+def set_config(config_file, config):
+    with open(config_file, "wt") as fp:
+        json.dump(config, fp, indent=4)
+
+
+
 def main():
     FORMAT = '%(message)s'
     logging.basicConfig(level=logging.INFO, format=FORMAT)
+
+    args = parser.parse_args()
 
     KEY=os.environ.get("BW_SESSION")
     if KEY is None:
         logger.fatal("No BW_SESSION")
         exit(1)
-
-    config_file = "bwenv.json"
-    try:
-        with open(config_file, "rt") as fp:
-            config = json.load(fp)
-    except:
-        logger.fatal(f"Missing config_file {config_file}")
-        exit(1)
     
-
-    bw = BW(KEY, config["folder_id"])
-
-    args = parser.parse_args()
-    if args.action == "set":
+    if args.action == "init":
+        bw = BW(KEY, None)
+        folder=bw.get_folder(args.NAME)
+        config = {
+            "folder_id": folder["id"]
+        }
+        set_config(args.config, config)  
+    elif args.action == "set":
+        config = get_config(args.config)
+        bw = BW(KEY, config["folder_id"])
         set_bw(bw, args.NAME, args.i)
         if args.s:
             bw.sync()
     elif args.action == "get":
+        config = get_config(args.config)
+        bw = BW(KEY, config["folder_id"])
         if args.s:
             bw.sync()
         get_bw(bw, args.NAME, args.o)
     elif args.action == "sync":
+        config = get_config(args.config)
+        bw = BW(KEY, config["folder_id"])
         bw.sync()
     else:
         print("Nothing to do", file=sys.stderr)

@@ -1,6 +1,6 @@
 # Conf
 .env
-bwenv.conf
+bwenv.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
