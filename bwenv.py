@@ -118,6 +118,7 @@ def get_bw(bw: BW, itemname, filename):
 import argparse
 parser = argparse.ArgumentParser(description='Bitwarden Environment')
 parser.add_argument("--config", default="bwenv.json", help='config file')
+parser.add_argument('--log', action='store_true', help='log')
 subp = parser.add_subparsers(dest="action")
 
 get_parser = subp.add_parser("get")
@@ -150,10 +151,11 @@ def set_config(config_file, config):
 
 
 def main():
-    FORMAT = '%(message)s'
-    logging.basicConfig(level=logging.INFO, format=FORMAT)
-
     args = parser.parse_args()
+    
+    FORMAT = '%(message)s'
+    level = logging.INFO if args.log else logging.WARN
+    logging.basicConfig(level=logging.INFO, format=FORMAT)
 
     KEY=os.environ.get("BW_SESSION")
     if KEY is None:
