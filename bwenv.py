@@ -117,7 +117,7 @@ def get_bw(bw: BW, itemname, filename):
 
 import argparse
 parser = argparse.ArgumentParser(description='Bitwarden Environment')
-parser.add_argument("--config", default="bwenv.json", help='config file')
+parser.add_argument("--config", default="/usr/local/etc/bwenv.conf", help='config file')
 parser.add_argument('--log', action='store_true', help='log')
 subp = parser.add_subparsers(dest="action")
 
