@@ -155,7 +155,7 @@ def main():
     
     FORMAT = '%(message)s'
     level = logging.INFO if args.log else logging.WARN
-    logging.basicConfig(level=logging.INFO, format=FORMAT)
+    logging.basicConfig(level=level, format=FORMAT)
 
     KEY=os.environ.get("BW_SESSION")
     if KEY is None:
